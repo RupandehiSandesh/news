@@ -1,202 +1,131 @@
-// Theme Management
-const themeToggle = document.getElementById('theme-toggle');
-const themeIcon = themeToggle.querySelector('i');
-
-const savedTheme = localStorage.getItem('theme') || 
-                  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-document.documentElement.setAttribute('data-theme', savedTheme);
-updateThemeIcon();
-
-themeToggle.addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon();
-});
-
-function updateThemeIcon() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    if (currentTheme === 'dark') {
-        themeIcon.className = 'fas fa-sun';
-    } else {
-        themeIcon.className = 'fas fa-moon';
-    }
-}
-
-// Date and Time
-function updateDateTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    };
-    
-    document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
-    document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US');
-}
-
-// Simulate Temperature
-function updateTemperature() {
-    const temperatures = ['22°C', '24°C', '25°C', '23°C', '26°C'];
-    const randomTemp = temperatures[Math.floor(Math.random() * temperatures.length)];
-    document.getElementById('temperature').textContent = `Temperature: ${randomTemp}`;
-}
-
-// News Data Management
-let newsData = [];
-
-// Load news from JSON file with auto-refresh
-async function loadNews() {
-    try {
-        // Try to load from localStorage first (faster)
-        const localNews = localStorage.getItem('rupandehi-sandesh-news');
-        if (localNews) {
-            newsData = JSON.parse(localNews);
-            displayNews();
-        }
-        
-        // Then try to load from JSON file
-        const response = await fetch('news-data.json?' + new Date().getTime());
-        const fileNews = await response.json();
-        
-        // Use whichever has more recent data
-        if (fileNews.length > newsData.length) {
-            newsData = fileNews;
-            displayNews();
-        }
-        
-    } catch (error) {
-        console.error('Error loading news:', error);
-        loadSampleData();
-    }
-}
-
-function loadSampleData() {
-    newsData = [
-        {
-            id: 1,
-            title: "Welcome to Rupandehi Sandesh",
-            category: "featured",
-            excerpt: "Your trusted news portal for latest updates from Rupandehi and beyond.",
-            content: "Rupandehi Sandesh is your premier source for news, updates, and stories from Rupandehi and surrounding areas. We are committed to delivering accurate, timely, and relevant news to our readers.",
-            image: "https://via.placeholder.com/400x200?text=Rupandehi+Sandesh",
-            date: new Date().toISOString(),
-            author: "Editor",
-            isBreaking: true,
-            isFeatured: true
-        }
-    ];
-    displayNews();
-}
-
-function displayNews() {
-    displayFeaturedNews();
-    displayCategoryNews('politics');
-    displayCategoryNews('business');
-    displayCategoryNews('sports');
-    displayCategoryNews('entertainment');
-    displayCategoryNews('technology');
-    updateBreakingNews();
-}
-
-function displayFeaturedNews() {
-    const featuredContainer = document.getElementById('featured-news');
-    const featuredNews = newsData.filter(news => news.isFeatured);
-    
-    if (featuredNews.length === 0) {
-        featuredContainer.innerHTML = '<p>No featured news available.</p>';
-        return;
-    }
-    
-    featuredContainer.innerHTML = featuredNews.map((news, index) => `
-        <div class="featured-item">
-            <img src="${news.image}" alt="${news.title}" class="news-image" onerror="this.src='https://via.placeholder.com/400x200?text=News+Image'">
-            <div class="news-content">
-                <h3 class="news-title">${news.title}</h3>
-                <div class="news-meta">
-                    <span>${formatDate(news.date)}</span> • 
-                    <span>${news.author}</span>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rupandehi Sandesh - Latest News</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="date-weather">
+                    <span id="current-date"></span>
+                    <span id="current-time"></span>
+                    <span id="temperature">Loading...</span>
                 </div>
-                <p class="news-excerpt">${news.excerpt}</p>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="theme-btn">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <a href="admin.html" class="admin-link">Admin</a>
+                </div>
             </div>
         </div>
-    `).join('');
-}
-
-function displayCategoryNews(category) {
-    const container = document.getElementById(`${category}-news`);
-    const categoryNews = newsData.filter(news => news.category === category && !news.isFeatured);
-    
-    if (categoryNews.length === 0) {
-        container.innerHTML = `<p>No ${category} news available.</p>`;
-        return;
-    }
-    
-    container.innerHTML = categoryNews.map(news => `
-        <div class="news-card">
-            <img src="${news.image}" alt="${news.title}" class="news-image" onerror="this.src='https://via.placeholder.com/400x200?text=News+Image'">
-            <div class="news-content">
-                <h3 class="news-title">${news.title}</h3>
-                <div class="news-meta">
-                    <span>${formatDate(news.date)}</span> • 
-                    <span>${news.author}</span>
+        
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <h1>Rupandehi Sandesh</h1>
+                    <p>Your Trusted News Source</p>
                 </div>
-                <p class="news-excerpt">${news.excerpt}</p>
+                <ul class="nav-menu">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#politics">Politics</a></li>
+                    <li><a href="#business">Business</a></li>
+                    <li><a href="#sports">Sports</a></li>
+                    <li><a href="#entertainment">Entertainment</a></li>
+                    <li><a href="#technology">Technology</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="breaking-news">
+        <div class="container">
+            <div class="breaking-label">
+                <span>BREAKING</span>
+            </div>
+            <div class="breaking-content">
+                <marquee behavior="scroll" direction="left" id="breaking-news-text">
+                    Welcome to Rupandehi Sandesh - Your trusted news portal
+                </marquee>
             </div>
         </div>
-    `).join('');
-}
+    </section>
 
-function updateBreakingNews() {
-    const breakingNews = newsData.find(news => news.isBreaking);
-    const breakingElement = document.getElementById('breaking-news-text');
-    
-    if (breakingNews) {
-        breakingElement.textContent = `BREAKING: ${breakingNews.title}`;
-    }
-}
+    <main class="container">
+        <section class="featured-news" id="home">
+            <h2>Featured News</h2>
+            <div class="featured-grid" id="featured-news">
+                <!-- News loaded by JavaScript -->
+            </div>
+        </section>
 
-function formatDate(dateString) {
-    const options = { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-}
+        <section class="news-categories">
+            <div class="category-section" id="politics">
+                <h2>Politics</h2>
+                <div class="news-grid" id="politics-news"></div>
+            </div>
 
-// Mobile Menu
-const hamburger = document.querySelector('.hamburger');
-const navMenu = document.querySelector('.nav-menu');
+            <div class="category-section" id="business">
+                <h2>Business</h2>
+                <div class="news-grid" id="business-news"></div>
+            </div>
 
-if (hamburger) {
-    hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        navMenu.classList.toggle('active');
-    });
-}
+            <div class="category-section" id="sports">
+                <h2>Sports</h2>
+                <div class="news-grid" id="sports-news"></div>
+            </div>
 
-// Auto-refresh news every 30 seconds
-setInterval(() => {
-    loadNews();
-}, 30000);
+            <div class="category-section" id="entertainment">
+                <h2>Entertainment</h2>
+                <div class="news-grid" id="entertainment-news"></div>
+            </div>
 
-// Refresh when page becomes visible
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-        loadNews();
-    }
-});
+            <div class="category-section" id="technology">
+                <h2>Technology</h2>
+                <div class="news-grid" id="technology-news"></div>
+            </div>
+        </section>
+    </main>
 
-// Initialize everything
-updateDateTime();
-updateTemperature();
-setInterval(updateDateTime, 1000);
-setInterval(updateTemperature, 300000);
-loadNews();
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Rupandehi Sandesh</h3>
+                    <p>Delivering accurate and timely news from Rupandehi and beyond.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Categories</h4>
+                    <ul>
+                        <li><a href="#politics">Politics</a></li>
+                        <li><a href="#business">Business</a></li>
+                        <li><a href="#sports">Sports</a></li>
+                        <li><a href="#entertainment">Entertainment</a></li>
+                        <li><a href="#technology">Technology</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>Email: info@rupandehisandesh.com</p>
+                    <p>Phone: +977-XXXXXXX</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Rupandehi Sandesh. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
